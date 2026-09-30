@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "./policy.css";
 // import { useNavigate } from "react-router-dom";
 import { getCompletedAge } from "../utils/date";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 const UserForm = () => {
   interface FormErrors {
     // name?: string;
