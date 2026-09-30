@@ -24,7 +24,7 @@ export default function LoginScreen() {
     password: "",
     rememberMe: false,
   });
-  const [errorMsg, setErrorMsg] = useState("");
+  // const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -35,7 +35,7 @@ export default function LoginScreen() {
   //login
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // Prevent default page refresh
-    setErrorMsg("");
+    // setErrorMsg("");
     setLoading(true);
 
     try {
@@ -54,15 +54,18 @@ export default function LoginScreen() {
 
       console.log("Login successful!", response.data.message);
       navigate("/policyCalculation");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error("Login failed:", error);
 
       // Handle server error response
       if (error.response && error.response.data) {
-        setErrorMsg(error.response.data.message || "Invalid credentials.");
-      } else {
-        setErrorMsg("Network error. Please try again later.");
+        console.log(error.response.data.message);
+        // setErrorMsg(error.response.data.message || "Invalid credentials.");
       }
+      // else {
+      //   // setErrorMsg("Network error. Please try again later.");
+      // }
     } finally {
       setLoading(false);
     }
@@ -74,12 +77,6 @@ export default function LoginScreen() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    console.log("Form Submitted:", formData);
-    // Add authentication logic here
   };
 
   const handleClickShowPassword = () => setShowPassword((prev) => !prev);
@@ -139,7 +136,7 @@ export default function LoginScreen() {
 
             <Box
               component="form"
-              onSubmit={handleSubmit}
+              onSubmit={handleLogin}
               noValidate
               sx={{ mt: 1, width: "100%" }}
             >
@@ -189,7 +186,6 @@ export default function LoginScreen() {
                 fullWidth
                 variant="contained"
                 sx={{ mt: 3, mb: 2, py: 1.2, fontWeight: "bold" }}
-                onClick={handleLogin}
               >
                 Sign In
               </Button>
