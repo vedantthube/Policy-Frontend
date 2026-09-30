@@ -118,7 +118,8 @@ const UserForm = () => {
     navigate("/illustration");
     // console.log("Form Data:", formData);
     try {
-      const response = await fetch("/api/illustrations", {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetch(`${API_BASE_URL}/api/illustrations`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
