@@ -40,8 +40,8 @@ export default function LoginScreen() {
 
     try {
       // 1. Call Backend API
-      const API_BASE_URL =
-        import.meta.env.API_BASE_URL || "http://localhost:5000";
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      // import.meta.env.API_BASE_URL || "http://localhost:5000";
       const response = await axios.post(`${API_BASE_URL}/login`, {
         email: formData.email,
         password: formData.password,
