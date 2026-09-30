@@ -39,8 +39,8 @@ export default function LoginScreen() {
     err?: string;
   }
   const [errors, setErrors] = useState<FormErrors>({});
-  const [apiError, setApiError] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  // const [apiError, setApiError] = useState<string>("");
+  // const [loading, setLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,7 +105,7 @@ export default function LoginScreen() {
 
     console.log("Form Data:", formData);
     // Add logic here (e.g., send data to API)
-    setLoading(true);
+    // setLoading(true);
     const saveUser = async () => {
       try {
         const response = await fetch("http://localhost:5000/register", {
@@ -122,10 +122,11 @@ export default function LoginScreen() {
 
         // Successful submit: Navigate to policy calculation page
         navigate("/login  ");
-      } catch (err: any) {
-        setApiError(err.message);
+      } catch (err) {
+        // setApiError(err.message);
+        console.log(err);
       } finally {
-        setLoading(false);
+        // setLoading(false);
       }
     };
     saveUser();

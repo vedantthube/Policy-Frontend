@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import "./policy.css";
 // import { useNavigate } from "react-router-dom";
-import { getCompletedAge } from "../utils/date";
 import { useNavigate } from "react-router-dom";
 const UserForm = () => {
   interface FormErrors {
@@ -26,6 +25,27 @@ const UserForm = () => {
     pt: "",
     ppt: "",
   });
+  const getCompletedAge = (
+    dob: string | number | Date,
+    asOfDate = new Date(),
+  ) => {
+    const birthDate = new Date(dob);
+    const currentDate = new Date(asOfDate);
+
+    let age = currentDate.getFullYear() - birthDate.getFullYear();
+
+    // Check if birthday has occurred this year
+    const hasBirthdayOccurred =
+      currentDate.getMonth() > birthDate.getMonth() ||
+      (currentDate.getMonth() === birthDate.getMonth() &&
+        currentDate.getDate() >= birthDate.getDate());
+
+    if (!hasBirthdayOccurred) {
+      age--;
+    }
+
+    return age;
+  };
   const [newErrors, setNewErrors] = useState<FormErrors>({});
   // const navigate = useNavigate();
   const handleChange = (
