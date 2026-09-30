@@ -1,221 +1,264 @@
-import React from "react";
-
-// Helper calculations
-const calculateAge = (dob) => {
-  const birthDate = new Date(dob);
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
+import React, { useState } from "react";
+import "./policy.css";
+// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+const UserForm = () => {
+  interface FormErrors {
+    // name?: string;
+    // email?: string;
+    // phone?: string;
+    // gender?: string;
+    // dob?: string;
+    // password?: string;
+    err?: string;
   }
-  return age;
-};
+  const storedUser = localStorage.getItem("user");
+  const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+  const dobconvert = parsedUser.dob.split("T")[0];
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    dob: dobconvert ? dobconvert : "",
+    gender: "",
+    sumAssured: "",
+    modalPremium: "",
+    premiumFrequency: "",
+    pt: "",
+    ppt: "",
+  });
+  const getCompletedAge = (
+    dob: string | number | Date,
+    asOfDate = new Date(),
+  ) => {
+    const birthDate = new Date(dob);
+    const currentDate = new Date(asOfDate);
 
-const calculateAnnualPremium = (modalPremium, frequency) => {
-  const multipliers = {
-    Yearly: 1,
-    "Half-Yearly": 2,
-    Quarterly: 4,
-    Monthly: 12,
+    let age = currentDate.getFullYear() - birthDate.getFullYear();
+
+    // Check if birthday has occurred this year
+    const hasBirthdayOccurred =
+      currentDate.getMonth() > birthDate.getMonth() ||
+      (currentDate.getMonth() === birthDate.getMonth() &&
+        currentDate.getDate() >= birthDate.getDate());
+
+    if (!hasBirthdayOccurred) {
+      age--;
+    }
+
+    return age;
   };
-  return modalPremium * (multipliers[frequency] || 1);
-};
+  const [newErrors, setNewErrors] = useState<FormErrors>({});
+  // const navigate = useNavigate();
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
 
-const getBonusRate = (year) => {
-  const bonusRates = {
-    1: 0.025,
-    2: 0.03,
-    3: 0.035,
-    4: 0.035,
-    5: 0.035,
-    6: 0.035,
-    7: 0.03,
-    8: 0.03,
-    9: 0.03,
-    10: 0.03,
-    11: 0.03,
-    12: 0.025,
-  };
-  return bonusRates[year] || 0.025;
-};
-
-const calculateBonus = (sumAssured, year) => {
-  return sumAssured * getBonusRate(year);
-};
-
-// Fund growth simulation
-const calculateFundValue = (
-  prevFundValue,
-  premium,
-  year,
-  age,
-  gender,
-  sumAssured,
-) => {
-  const assumedGrowthRate = 0.084; // Aligned with target IRR ~8.4%
-  return (prevFundValue + premium) * (1 + assumedGrowthRate);
-};
-
-// Generator Function
-export const generateIllustration = (policyData) => {
-  const { dob, gender, sumAssured, modalPremium, pt, ppt, premiumFrequency } =
-    policyData;
-
-  const policyTerm = Number(pt);
-  const premiumPaymentTerm = Number(ppt);
-
-  const ageAtEntry = calculateAge(dob);
-  const annualPremium = calculateAnnualPremium(modalPremium, premiumFrequency);
-  const illustration = [];
-
-  let fundValue = 0;
-
-  for (let year = 1; year <= policyTerm; year++) {
-    const age = ageAtEntry + year - 1;
-
-    // Premium is deducted only within PPT
-    const premium = year <= premiumPaymentTerm ? annualPremium : 0;
-
-    // Accumulate Fund Value
-    fundValue = calculateFundValue(
-      fundValue,
-      premium,
-      year,
-      age,
-      gender,
-      sumAssured,
-    );
-
-    // Bonus earned during PPT
-    const bonusAmount =
-      year <= premiumPaymentTerm ? calculateBonus(sumAssured, year) : 0;
-
-    // Total Benefit paid out ONLY when PT completes (Maturity Year)
-    const totalBenefit = year === policyTerm ? sumAssured + fundValue : 0;
-
-    // Net Cashflows: Negative during PPT, Maturity benefit at end of PT, 0 otherwise
-    const netCashflow =
-      premium > 0 ? -premium : year === policyTerm ? totalBenefit : 0;
-
-    illustration.push({
-      policyYear: year,
-      premium: Math.round(premium),
-      sumAssured: Math.round(sumAssured),
-      bonusRate: (getBonusRate(year) * 100).toFixed(2) + "%",
-      bonusAmount: Math.round(bonusAmount),
-      totalBenefit: Math.round(totalBenefit),
-      fundValue: Math.round(fundValue),
-      netCashflows: Math.round(netCashflow),
-    });
-  }
-
-  return {
-    illustration,
-    irr: "8.4", // Hardcoded fixed IRR output
-    summary: {
-      totalPremium: annualPremium * premiumPaymentTerm,
-      totalBenefit: illustration[policyTerm - 1]?.totalBenefit || 0,
-      totalBonus: illustration.reduce((sum, il) => sum + il.bonusAmount, 0),
-    },
-  };
-};
-
-// React Display Component
-const PolicyIllustrationTable = () => {
-  const apiData = {
-    dob: "1998-02-04",
-    gender: "male",
-    sumAssured: 1000000,
-    modalPremium: 22213,
-    premiumFrequency: "Quarterly",
-    pt: 12,
-    ppt: 6,
-    calculatedAge: 28,
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const { illustration, irr } = generateIllustration(apiData);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.removeItem("formData");
+    const ppt = Number(formData.ppt);
+    const pt = Number(formData.pt);
+    const modalPremium = Number(formData.modalPremium);
+    const sumAssured = Number(formData.sumAssured);
+    const completeage = getCompletedAge(formData.dob);
+    const validationErrors: FormErrors = {};
+    //Age Validation (Min: 23, Max: 56)
+    if (completeage <= 23 || completeage >= 56 || !formData.dob) {
+      validationErrors.err = "age should be between 23 to 56";
+      setNewErrors(validationErrors);
+      return;
+    }
+    // 2. PPT Validation (Min: 5, Max: 10)
+    if (isNaN(ppt) || ppt < 5 || ppt > 10) {
+      validationErrors.err =
+        "Premium Payment Term (PPT) must be between 5 and 10 years.";
+      setNewErrors(validationErrors);
+      return;
+    }
+
+    // 3. PT Validation (Min: 10, Max: 20)
+    if (isNaN(pt) || pt < 10 || pt > 20) {
+      validationErrors.err =
+        "Policy Term (PT) must be between 10 and 20 years.";
+      setNewErrors(validationErrors);
+      return;
+    }
+    // 4. PT > PPT Validation
+    if (!isNaN(pt) && !isNaN(ppt) && pt <= ppt) {
+      validationErrors.err =
+        "Policy Term (PT) must be strictly greater than Premium Payment Term (PPT).";
+    }
+
+    // 5. Premium Validation (Min: 10,000, Max: 50,000)
+    if (isNaN(modalPremium) || modalPremium < 10000 || modalPremium > 50000) {
+      validationErrors.err = "Premium must be between ₹10,000 and ₹50,000.";
+    }
+
+    // 6. Sum Assured Validation
+    // Minimum requirement: Greater than or equal to 10 times Modal Premium OR ₹5,000,000 (whichever minimum threshold applies)
+    const minRequiredSA = Math.min(10 * modalPremium, 5000000);
+    if (isNaN(sumAssured) || sumAssured < minRequiredSA) {
+      validationErrors.err = `Sum Assured must be at least ₹${minRequiredSA.toLocaleString("en-IN")}.`;
+    }
+
+    // If validation fails, display errors and stop submission
+    if (validationErrors.err) {
+      setNewErrors(validationErrors);
+
+      return;
+    }
+    setNewErrors({});
+    localStorage.setItem("formData", JSON.stringify(formData));
+    navigate("/illustration");
+    // console.log("Form Data:", formData);
+    try {
+      const response = await fetch("/api/illustrations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          ppt,
+          pt,
+          modalPremium,
+          sumAssured,
+          calculatedAge: completeage,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save illustration.");
+      }
+
+      const data = await response.json();
+      console.log("ILLustration created ", data);
+      // alert("Illustration created successfully!");
+    } catch (error) {
+      console.error("Submission error:", error);
+      // alert("An error occurred while saving the illustration.");
+    }
+    // Later you can send this to Express API
+    // axios.post("http://localhost:5000/api/user", formData);
+  };
+
+  // const handleclick = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  // };
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <div
-        style={{ marginBottom: "15px", fontWeight: "bold", fontSize: "16px" }}
-      >
-        IRR: {irr}%
-      </div>
+    <div className="form-container">
+      <h2>Policy Details</h2>
+      <h4 style={{ color: "red" }}>{newErrors.err ? newErrors.err : ""}</h4>
 
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          textAlign: "center",
-          fontSize: "14px",
-        }}
-      >
-        <thead>
-          <tr
-            style={{
-              backgroundColor: "#FFE17D",
-              color: "#000",
-              fontWeight: "bold",
-            }}
+      <form onSubmit={handleSubmit}>
+        {/* DOB */}
+        <div className="form-group">
+          <label>Date of Birth</label>
+          <input
+            type="date"
+            name="dob"
+            value={formData.dob}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        {/* Gender */}
+        <div className="form-group">
+          <label>Gender</label>
+          <select
+            name="gender"
+            value={formData.gender}
+            onChange={handleChange}
+            required
           >
-            <th style={cellStyle}>Policy Year</th>
-            <th style={cellStyle}>Premium</th>
-            <th style={cellStyle}>Sum Assured</th>
-            <th style={cellStyle}>Bonus Rate</th>
-            <th style={cellStyle}>Bonus Amount</th>
-            <th style={cellStyle}>Total Benefit</th>
-            <th style={cellStyle}>Net Cashflows</th>
-          </tr>
-        </thead>
-        <tbody>
-          {illustration.map((row) => (
-            <tr
-              key={row.policyYear}
-              style={{ borderBottom: "1px solid #e0e0e0" }}
-            >
-              <td style={cellStyle}>{row.policyYear}</td>
-              <td style={cellStyle}>₹{row.premium.toLocaleString("en-IN")}</td>
-              <td style={cellStyle}>
-                {row.policyYear === Number(apiData.pt)
-                  ? `₹${row.sumAssured.toLocaleString("en-IN")}`
-                  : "0"}
-              </td>
-              <td style={cellStyle}>{row.bonusRate}</td>
-              <td style={cellStyle}>
-                ₹{row.bonusAmount.toLocaleString("en-IN")}
-              </td>
-              <td style={cellStyle}>
-                {row.totalBenefit > 0
-                  ? `₹${row.totalBenefit.toLocaleString("en-IN")}`
-                  : "0"}
-              </td>
-              <td
-                style={{
-                  ...cellStyle,
-                  fontWeight: row.netCashflows !== 0 ? "bold" : "normal",
-                  color:
-                    row.netCashflows < 0
-                      ? "#d9534f"
-                      : row.netCashflows > 0
-                        ? "#28a745"
-                        : "#000",
-                }}
-              >
-                ₹{row.netCashflows.toLocaleString("en-IN")}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            <option value="">Select Gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        {/* Sum Assured */}
+        <div className="form-group">
+          <label>Sum Assured</label>
+          <input
+            type="number"
+            name="sumAssured"
+            value={formData.sumAssured}
+            onChange={handleChange}
+            placeholder="Enter Sum Assured"
+            required
+          />
+        </div>
+
+        {/* Modal Premium */}
+        <div className="form-group">
+          <label>Modal Premium</label>
+          <input
+            type="number"
+            name="modalPremium"
+            value={formData.modalPremium}
+            onChange={handleChange}
+            placeholder="Enter Modal Premium"
+            required
+          />
+        </div>
+
+        {/* Premium Frequency */}
+        <div className="form-group">
+          <label>Premium Frequency</label>
+          <select
+            name="premiumFrequency"
+            value={formData.premiumFrequency}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Select Frequency</option>
+            <option value="Monthly">Monthly</option>
+            <option value="Quarterly">Quarterly</option>
+            <option value="Half-Yearly">Half-Yearly</option>
+            <option value="Yearly">Yearly</option>
+          </select>
+        </div>
+
+        {/* PT */}
+        <div className="form-group">
+          <label>PT (Policy Term)</label>
+          <input
+            type="number"
+            name="pt"
+            value={formData.pt}
+            onChange={handleChange}
+            placeholder="Enter Policy Term"
+            required
+          />
+        </div>
+
+        {/* PPT */}
+        <div className="form-group">
+          <label>PPT (Premium Paying Term)</label>
+          <input
+            type="number"
+            name="ppt"
+            value={formData.ppt}
+            onChange={handleChange}
+            placeholder="Enter Premium Paying Term"
+            required
+          />
+        </div>
+
+        <button type="submit">Go to Illustrate</button>
+      </form>
     </div>
   );
 };
 
-const cellStyle = {
-  padding: "8px 12px",
-  whiteSpace: "nowrap",
-};
-
-export default PolicyIllustrationTable;
+export default UserForm;
