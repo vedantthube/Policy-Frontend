@@ -108,8 +108,10 @@ export default function LoginScreen() {
     // setLoading(true);
     const saveUser = async () => {
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-        const response = await fetch(API_BASE_URL, {
+        const API_BASE_URL =
+          import.meta.env.API_BASE_URL || "http://localhost:5000";
+        console.log("APIIIII", API_BASE_URL);
+        const response = await fetch(`${API_BASE_URL}/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
