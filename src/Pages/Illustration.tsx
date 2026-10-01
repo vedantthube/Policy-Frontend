@@ -84,6 +84,8 @@ export const Illustration: React.FC = () => {
                 savedData.map((row) => {
                   const isPositiveCashflow = row.netCashflows > 0;
                   const isNegativeCashflow = row.netCashflows < 0;
+                  const completed =
+                    row.policyYear == savedData.length ? row.sumAssured : "0";
 
                   return (
                     <tr
@@ -102,7 +104,7 @@ export const Illustration: React.FC = () => {
 
                       {/* Sum Assured */}
                       <td className="px-6 py-4 text-right text-gray-700 font-medium whitespace-nowrap">
-                        ₹{(row.sumAssured ?? 0).toLocaleString("en-IN")}
+                        ₹{completed}
                       </td>
 
                       {/* Bonus Rate */}
