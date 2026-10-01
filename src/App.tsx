@@ -9,7 +9,7 @@ import Login from "./Pages/Login";
 import Register from "./Pages/Register";
 import PolicyCalculation from "./Pages/PolicyCalculation";
 import Navbar from "./components/Navbar";
-import Illustration from "./Pages/Illustration";
+import { Illustration } from "./Pages/Illustration";
 import "./App.css";
 
 function App() {

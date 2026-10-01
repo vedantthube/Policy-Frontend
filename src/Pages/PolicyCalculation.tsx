@@ -62,61 +62,59 @@ const UserForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.removeItem("formData");
+
     const ppt = Number(formData.ppt);
     const pt = Number(formData.pt);
     const modalPremium = Number(formData.modalPremium);
     const sumAssured = Number(formData.sumAssured);
     const completeage = getCompletedAge(formData.dob);
+
     const validationErrors: FormErrors = {};
-    //Age Validation (Min: 23, Max: 56)
-    if (completeage <= 23 || completeage >= 56 || !formData.dob) {
-      validationErrors.err = "age should be between 23 to 56";
-      setNewErrors(validationErrors);
-      return;
+
+    // 1. Age Validation (Min: 23, Max: 56 inclusive)
+    if (!formData.dob || completeage < 23 || completeage > 56) {
+      validationErrors.err = "Age should be between 23 and 56.";
     }
     // 2. PPT Validation (Min: 5, Max: 10)
-    if (isNaN(ppt) || ppt < 5 || ppt > 10) {
+    else if (isNaN(ppt) || ppt < 5 || ppt > 10) {
       validationErrors.err =
         "Premium Payment Term (PPT) must be between 5 and 10 years.";
-      setNewErrors(validationErrors);
-      return;
     }
-
     // 3. PT Validation (Min: 10, Max: 20)
-    if (isNaN(pt) || pt < 10 || pt > 20) {
+    else if (isNaN(pt) || pt < 10 || pt > 20) {
       validationErrors.err =
         "Policy Term (PT) must be between 10 and 20 years.";
-      setNewErrors(validationErrors);
-      return;
     }
     // 4. PT > PPT Validation
-    if (!isNaN(pt) && !isNaN(ppt) && pt <= ppt) {
+    else if (pt <= ppt) {
       validationErrors.err =
         "Policy Term (PT) must be strictly greater than Premium Payment Term (PPT).";
     }
-
     // 5. Premium Validation (Min: 10,000, Max: 50,000)
-    if (isNaN(modalPremium) || modalPremium < 10000 || modalPremium > 50000) {
+    else if (
+      isNaN(modalPremium) ||
+      modalPremium < 10000 ||
+      modalPremium > 50000
+    ) {
       validationErrors.err = "Premium must be between ₹10,000 and ₹50,000.";
+    } else {
+      // 6. Sum Assured Validation
+      // Adjust Math.min / Math.max based on whether you want a lower or upper minimum bound
+      const minRequiredSA = Math.min(10 * modalPremium, 5000000);
+      if (isNaN(sumAssured) || sumAssured < minRequiredSA) {
+        validationErrors.err = `Sum Assured must be at least ₹${minRequiredSA.toLocaleString("en-IN")}.`;
+      }
     }
 
-    // 6. Sum Assured Validation
-    // Minimum requirement: Greater than or equal to 10 times Modal Premium OR ₹5,000,000 (whichever minimum threshold applies)
-    const minRequiredSA = Math.min(10 * modalPremium, 5000000);
-    if (isNaN(sumAssured) || sumAssured < minRequiredSA) {
-      validationErrors.err = `Sum Assured must be at least ₹${minRequiredSA.toLocaleString("en-IN")}.`;
-    }
-
-    // If validation fails, display errors and stop submission
+    // If any validation fails, set errors and stop execution
     if (validationErrors.err) {
       setNewErrors(validationErrors);
-
       return;
     }
+
     setNewErrors({});
     localStorage.setItem("formData", JSON.stringify(formData));
-    navigate("/illustration");
-    // console.log("Form Data:", formData);
+
     try {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
       const response = await fetch(`${API_BASE_URL}/api/illustrations`, {
@@ -130,7 +128,6 @@ const UserForm = () => {
           pt,
           modalPremium,
           sumAssured,
-          calculatedAge: completeage,
         }),
       });
 
@@ -139,14 +136,21 @@ const UserForm = () => {
       }
 
       const data = await response.json();
-      console.log("ILLustration created ", data);
-      // alert("Illustration created successfully!");
+      navigate("/illustration");
+      localStorage.setItem(
+        "illustration",
+        JSON.stringify(data.data.illustration),
+      );
+      // localStorage.setItem("illustration", data.data.illustration);
+      console.log("Illustration created successfully:", data.data.illustration);
+
+      // Navigate only after successful API call
     } catch (error) {
       console.error("Submission error:", error);
-      // alert("An error occurred while saving the illustration.");
+      setNewErrors({
+        err: "An error occurred while generating the illustration. Please try again.",
+      });
     }
-    // Later you can send this to Express API
-    // axios.post("http://localhost:5000/api/user", formData);
   };
 
   // const handleclick = (e: React.FormEvent) => {
@@ -256,7 +260,12 @@ const UserForm = () => {
           />
         </div>
 
-        <button type="submit">Go to Illustrate</button>
+        <button
+          type="submit"
+          style={{ color: "black", backgroundColor: "rgba(77, 80, 82, 0.2)" }}
+        >
+          Go to Illustrate
+        </button>
       </form>
     </div>
   );

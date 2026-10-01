@@ -1,265 +1,156 @@
-import React, { useState } from "react";
-import "./policy.css";
-// import { useNavigate } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-const UserForm = () => {
-  interface FormErrors {
-    // name?: string;
-    // email?: string;
-    // phone?: string;
-    // gender?: string;
-    // dob?: string;
-    // password?: string;
-    err?: string;
-  }
-  const storedUser = localStorage.getItem("user");
-  const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-  const dobconvert = parsedUser.dob.split("T")[0];
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    dob: dobconvert ? dobconvert : "",
-    gender: "",
-    sumAssured: "",
-    modalPremium: "",
-    premiumFrequency: "",
-    pt: "",
-    ppt: "",
-  });
-  const getCompletedAge = (
-    dob: string | number | Date,
-    asOfDate = new Date(),
-  ) => {
-    const birthDate = new Date(dob);
-    const currentDate = new Date(asOfDate);
+import React from "react";
+import { useLocation } from "react-router-dom";
 
-    let age = currentDate.getFullYear() - birthDate.getFullYear();
+interface IllustrationRow {
+  policyYear: number;
+  premium: number;
+  sumAssured?: number;
+  bonusRate?: number;
+  bonusAmount: number;
+  fundValue?: number;
+  deathBenefit?: number;
+  totalBenefit: number;
+  netCashflows: number;
+}
 
-    // Check if birthday has occurred this year
-    const hasBirthdayOccurred =
-      currentDate.getMonth() > birthDate.getMonth() ||
-      (currentDate.getMonth() === birthDate.getMonth() &&
-        currentDate.getDate() >= birthDate.getDate());
+export const Illustration: React.FC = () => {
+  const location = useLocation();
 
-    if (!hasBirthdayOccurred) {
-      age--;
+  const savedData: IllustrationRow[] = React.useMemo(() => {
+    if (location.state?.illustrationData) {
+      return location.state.illustrationData;
     }
-
-    return age;
-  };
-  const [newErrors, setNewErrors] = useState<FormErrors>({});
-  // const navigate = useNavigate();
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    localStorage.removeItem("formData");
-    const ppt = Number(formData.ppt);
-    const pt = Number(formData.pt);
-    const modalPremium = Number(formData.modalPremium);
-    const sumAssured = Number(formData.sumAssured);
-    const completeage = getCompletedAge(formData.dob);
-    const validationErrors: FormErrors = {};
-    //Age Validation (Min: 23, Max: 56)
-    if (completeage <= 23 || completeage >= 56 || !formData.dob) {
-      validationErrors.err = "age should be between 23 to 56";
-      setNewErrors(validationErrors);
-      return;
-    }
-    // 2. PPT Validation (Min: 5, Max: 10)
-    if (isNaN(ppt) || ppt < 5 || ppt > 10) {
-      validationErrors.err =
-        "Premium Payment Term (PPT) must be between 5 and 10 years.";
-      setNewErrors(validationErrors);
-      return;
-    }
-
-    // 3. PT Validation (Min: 10, Max: 20)
-    if (isNaN(pt) || pt < 10 || pt > 20) {
-      validationErrors.err =
-        "Policy Term (PT) must be between 10 and 20 years.";
-      setNewErrors(validationErrors);
-      return;
-    }
-    // 4. PT > PPT Validation
-    if (!isNaN(pt) && !isNaN(ppt) && pt <= ppt) {
-      validationErrors.err =
-        "Policy Term (PT) must be strictly greater than Premium Payment Term (PPT).";
-    }
-
-    // 5. Premium Validation (Min: 10,000, Max: 50,000)
-    if (isNaN(modalPremium) || modalPremium < 10000 || modalPremium > 50000) {
-      validationErrors.err = "Premium must be between ₹10,000 and ₹50,000.";
-    }
-
-    // 6. Sum Assured Validation
-    // Minimum requirement: Greater than or equal to 10 times Modal Premium OR ₹5,000,000 (whichever minimum threshold applies)
-    const minRequiredSA = Math.min(10 * modalPremium, 5000000);
-    if (isNaN(sumAssured) || sumAssured < minRequiredSA) {
-      validationErrors.err = `Sum Assured must be at least ₹${minRequiredSA.toLocaleString("en-IN")}.`;
-    }
-
-    // If validation fails, display errors and stop submission
-    if (validationErrors.err) {
-      setNewErrors(validationErrors);
-
-      return;
-    }
-    setNewErrors({});
-    localStorage.setItem("formData", JSON.stringify(formData));
-    navigate("/illustration");
-    // console.log("Form Data:", formData);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const response = await fetch(`${API_BASE_URL}/api/illustrations`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          ppt,
-          pt,
-          modalPremium,
-          sumAssured,
-          calculatedAge: completeage,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save illustration.");
-      }
-
-      const data = await response.json();
-      console.log("ILLustration created ", data);
-      // alert("Illustration created successfully!");
-    } catch (error) {
-      console.error("Submission error:", error);
-      // alert("An error occurred while saving the illustration.");
+      const stored = localStorage.getItem("illustration");
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.error("Failed to parse localStorage data", e);
+      return [];
     }
-    // Later you can send this to Express API
-    // axios.post("http://localhost:5000/api/user", formData);
-  };
-
-  // const handleclick = (e: React.FormEvent) => {
-  //   e.preventDefault();
-  // };
+  }, [location.state]);
 
   return (
-    <div className="form-container">
-      <h2>Policy Details</h2>
-      <h4 style={{ color: "red" }}>{newErrors.err ? newErrors.err : ""}</h4>
-
-      <form onSubmit={handleSubmit}>
-        {/* DOB */}
-        <div className="form-group">
-          <label>Date of Birth</label>
-          <input
-            type="date"
-            name="dob"
-            value={formData.dob}
-            onChange={handleChange}
-            required
-          />
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* Header & Overview Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+            Policy Illustration Summary
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Year-by-year financial breakdown of premiums, bonuses, and projected
+            cash flows.
+          </p>
         </div>
-
-        {/* Gender */}
-        <div className="form-group">
-          <label>Gender</label>
-          <select
-            name="gender"
-            value={formData.gender}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Select Gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="Other">Other</option>
-          </select>
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+            Term: {savedData.length} Years
+          </span>
         </div>
+      </div>
 
-        {/* Sum Assured */}
-        <div className="form-group">
-          <label>Sum Assured</label>
-          <input
-            type="number"
-            name="sumAssured"
-            value={formData.sumAssured}
-            onChange={handleChange}
-            placeholder="Enter Sum Assured"
-            required
-          />
+      {/* Table Container */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50/80 uppercase text-xs tracking-wider text-gray-500 font-semibold">
+              <tr>
+                <th scope="col" className="px-6 py-4 text-left">
+                  Year
+                </th>
+                <th scope="col" className="px-6 py-4 text-right">
+                  Premium
+                </th>
+                <th scope="col" className="px-6 py-4 text-right">
+                  Sum Assured
+                </th>
+                <th scope="col" className="px-6 py-4 text-right">
+                  Bonus Rate
+                </th>
+                <th scope="col" className="px-6 py-4 text-right">
+                  Bonus Amount
+                </th>
+                <th scope="col" className="px-6 py-4 text-right">
+                  Total Benefit
+                </th>
+                <th scope="col" className="px-6 py-4 text-right">
+                  Net Cashflow
+                </th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {savedData.length > 0 ? (
+                savedData.map((row) => {
+                  const isPositiveCashflow = row.netCashflows > 0;
+                  const isNegativeCashflow = row.netCashflows < 0;
+
+                  return (
+                    <tr
+                      key={row.policyYear}
+                      className="hover:bg-blue-50/40 transition-colors duration-150"
+                    >
+                      {/* Policy Year */}
+                      <td className="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap">
+                        Year {row.policyYear}
+                      </td>
+
+                      {/* Premium */}
+                      <td className="px-6 py-4 text-right text-gray-700 font-medium whitespace-nowrap">
+                        ₹{(row.premium ?? 0).toLocaleString("en-IN")}
+                      </td>
+
+                      {/* Sum Assured */}
+                      <td className="px-6 py-4 text-right text-gray-700 font-medium whitespace-nowrap">
+                        ₹{(row.sumAssured ?? 0).toLocaleString("en-IN")}
+                      </td>
+
+                      {/* Bonus Rate */}
+                      <td className="px-6 py-4 text-right text-gray-600 whitespace-nowrap">
+                        {((row.bonusRate ?? 0) * 100).toFixed(1)}%
+                      </td>
+
+                      {/* Bonus Amount */}
+                      <td className="px-6 py-4 text-right text-gray-700 font-medium whitespace-nowrap">
+                        ₹{(row.bonusAmount ?? 0).toLocaleString("en-IN")}
+                      </td>
+
+                      {/* Total Benefit */}
+                      <td className="px-6 py-4 text-right font-semibold text-emerald-600 whitespace-nowrap">
+                        ₹{(row.totalBenefit ?? 0).toLocaleString("en-IN")}
+                      </td>
+
+                      {/* Net Cashflow */}
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center justify-end px-2.5 py-1 rounded-md text-xs font-semibold ${
+                            isPositiveCashflow
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : isNegativeCashflow
+                                ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                : "bg-gray-50 text-gray-600 border border-gray-200"
+                          }`}
+                        >
+                          ₹{(row.netCashflows ?? 0).toLocaleString("en-IN")}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-6 py-12 text-center text-gray-400 bg-gray-50/50"
+                  >
+                    No illustration data available.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-
-        {/* Modal Premium */}
-        <div className="form-group">
-          <label>Modal Premium</label>
-          <input
-            type="number"
-            name="modalPremium"
-            value={formData.modalPremium}
-            onChange={handleChange}
-            placeholder="Enter Modal Premium"
-            required
-          />
-        </div>
-
-        {/* Premium Frequency */}
-        <div className="form-group">
-          <label>Premium Frequency</label>
-          <select
-            name="premiumFrequency"
-            value={formData.premiumFrequency}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Select Frequency</option>
-            <option value="Monthly">Monthly</option>
-            <option value="Quarterly">Quarterly</option>
-            <option value="Half-Yearly">Half-Yearly</option>
-            <option value="Yearly">Yearly</option>
-          </select>
-        </div>
-
-        {/* PT */}
-        <div className="form-group">
-          <label>PT (Policy Term)</label>
-          <input
-            type="number"
-            name="pt"
-            value={formData.pt}
-            onChange={handleChange}
-            placeholder="Enter Policy Term"
-            required
-          />
-        </div>
-
-        {/* PPT */}
-        <div className="form-group">
-          <label>PPT (Premium Paying Term)</label>
-          <input
-            type="number"
-            name="ppt"
-            value={formData.ppt}
-            onChange={handleChange}
-            placeholder="Enter Premium Paying Term"
-            required
-          />
-        </div>
-
-        <button type="submit">Go to Illustrate</button>
-      </form>
+      </div>
     </div>
   );
 };
-
-export default UserForm;
