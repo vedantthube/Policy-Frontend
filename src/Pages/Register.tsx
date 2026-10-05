@@ -126,7 +126,7 @@ export default function LoginScreen() {
         // Successful submit: Navigate to policy calculation page
         navigate("/login  ");
       } catch (err: unknown) {
-        setApiError(err.message);
+        setApiError(err instanceof Error ? err.message : "Failed to save user");
         console.log(err);
       } finally {
         // setLoading(false);
