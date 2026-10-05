@@ -39,7 +39,7 @@ export default function LoginScreen() {
     err?: string;
   }
   const [errors, setErrors] = useState<FormErrors>({});
-  // const [apiError, setApiError] = useState<string>("");
+  const [apiError, setApiError] = useState<string>("");
   // const [loading, setLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -50,7 +50,7 @@ export default function LoginScreen() {
       [name]: type === "checkbox" ? checked : value,
     }));
     // if (errors[name as keyof FormErrors]) {
-    //   setErrors((prev) => ({ ...prev, [name]: "" }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
     // }
   };
 
@@ -118,15 +118,15 @@ export default function LoginScreen() {
         });
 
         const data = await response.json();
-
+        console.log("ADSDS", data);
         if (!response.ok) {
           throw new Error(data.message || "Failed to save user");
         }
 
         // Successful submit: Navigate to policy calculation page
         navigate("/login  ");
-      } catch (err) {
-        // setApiError(err.message);
+      } catch (err: unknown) {
+        setApiError(err.message);
         console.log(err);
       } finally {
         // setLoading(false);
@@ -178,6 +178,7 @@ export default function LoginScreen() {
           <Typography component="h1" variant="h5" sx={{ fontWeight: "bold" }}>
             Sign Up
           </Typography>
+          {apiError.length > 0 && <p style={{ color: "red" }}>{apiError}</p>}
           {errors.err != "" && <p style={{ color: "red" }}>{errors.err}</p>}
           <Box
             component="form"
